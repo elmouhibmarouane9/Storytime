@@ -28,12 +28,30 @@ PAGES = {
 }
 
 
+def _is_public_host() -> bool:
+    """True when the request did not arrive on localhost — i.e. this is reachable."""
+    try:
+        host = (st.context.headers.get("Host") or "").split(":")[0].lower()
+    except Exception:
+        return False
+    return bool(host) and host not in ("localhost", "127.0.0.1", "0.0.0.0")
+
+
+def _warn_if_public_and_unguarded() -> None:
+    if service.access_code() or not _is_public_host():
+        return
+    st.error("**This console is on a public URL with no access code.** Anyone with the link can read "
+             "your ledger. Add `MIM_ACCESS_CODE` to the host's environment or secrets and reload.", icon="🚨")
+
+
 def main() -> None:
     store.bootstrap()
     inject_theme()
 
     if not service.require_password():
         return
+
+    _warn_if_public_and_unguarded()
 
     lang = st.session_state.get("console_lang", "EN")
     b = console.book()

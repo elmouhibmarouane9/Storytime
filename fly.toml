@@ -1,0 +1,37 @@
+# Fly.io — permanent hosting with a real volume, git-push deploys.
+#
+#   fly launch --no-deploy --copy-config --name mim-console
+#   fly volumes create mim_data --size 1 --region cdg
+#   fly secrets set MIM_ACCESS_CODE=$(openssl rand -hex 12)
+#   fly deploy
+#
+# Optional, keeps the book in Git too: fly secrets set GITHUB_TOKEN=... MIM_DATA_REPO=you/mim-book
+
+app = "mim-console"
+primary_region = "cdg"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  MIM_DATA_DIR = "/app/data"
+
+[http_service]
+  internal_port = 8501
+  force_https = true
+  auto_stop_machines = "stop"      # idle-friendly: you are one operator, not a crowd
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [http_service.concurrency]
+    type = "connections"
+    soft_limit = 20
+    hard_limit = 40
+
+[[mounts]]
+  source = "mim_data"
+  destination = "/app/data"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

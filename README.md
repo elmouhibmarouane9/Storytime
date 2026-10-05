@@ -70,8 +70,79 @@ data/projects.json   tasks, deliverables + approvals, time_entries, change_order
 data/messages.json   every logged touch, with channel, direction and reminder tier
 ```
 
-`data/` is git-ignored by default — your client data shouldn't live in a repo. Export the full book
-as JSON from **Settings → Book** any time.
+Two backends, chosen by configuration, same JSON either way:
+
+* **local disk** (default) — `MIM_DATA_DIR`, atomic writes.
+* **your private Git repo** — set `GITHUB_TOKEN` + `MIM_DATA_REPO`. Every save is a commit;
+  the console pulls on load with a short cache and retries failed pushes. This is what makes
+  a free, permanently-linked host safe: the book outlives the container.
+
+The `data/` folder itself is git-ignored default so real client data stays out of this repo.
+Export the full book as JSON from **Settings → Book** any time, or push it to your own
+private data repo with the backend above.
+
+## Get a permanent link
+
+Three routes to a URL that outlives this session. The links below are pre-filled for this repo.
+
+### A. Streamlit Community Cloud — free, 2 minutes, permanent URL
+
+**[→ Deploy now](https://share.streamlit.io/deploy?repository=elmouhibmaroune9/Storytime&branch=arena/01a10c7b-storytime&mainModule=streamlit_app.py)**
+
+Sign in with GitHub, confirm the repo + branch + `streamlit_app.py`, then paste this into
+**Advanced settings → Secrets**:
+
+```toml
+MIM_ACCESS_CODE = "paste-a-long-random-code"
+```
+
+You get `https://<your-app>.streamlit.app`. **The container disk is ephemeral** — without
+step B your book resets when the app sleeps. With step B it never does.
+
+### B. Your book in Git — the part that makes any free host safe
+
+Create a **private** repo (e.g. `mim-book`, empty — no README), then create a
+[fine-grained token](https://github.com/settings/personal-access-tokens/new) scoped to
+**that repo only** with **Contents: Read and write**. Add both as secrets/env vars on
+whatever host you use:
+
+| Variable | Value |
+|---|---|
+| `GITHUB_TOKEN` | the fine-grained token (never paste it into chat or a repo) |
+| `MIM_DATA_REPO` | `your-user/mim-book` |
+
+Optional: `MIM_DATA_BRANCH` (default `main`), `MIM_DATA_PATH` (default `data`).
+
+From then on every save is a commit, every commit is a restore point, and the console —
+Settings shows a green **Synced** panel with the repo name and last push. If GitHub is
+briefly unreachable, writes mirror to local disk, the sidebar flags it, and **Sync now**
+retries. Nothing is lost.
+
+### C. Render / Railway / Fly.io — permanent URL with a real disk
+
+Configs are in the repo: **`render.yaml`** (Blueprint — New → Blueprint → pick the repo),
+**`fly.toml`** (`fly launch --copy-config && fly volumes create mim_data --size 1 && fly deploy`).
+Mount the volume at `/app/data` — that single setting is the difference between a
+permanent book and a recurring data loss. The Render disk requires the Starter plan
+(~$7/mo); on the free plan, use the Git backend from step B instead.
+
+### D. Your own domain, €4/month
+
+Full control, no platform in the middle:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/elmouhibmarouane9/Storytime/arena/01a10c7b-storytime/deploy/install.sh | bash
+```
+
+One command: installs Docker, clones to `/opt/mim`, generates your access code, asks for a
+domain, and serves HTTPS through Caddy. Details in **Path 2** below.
+
+### Hugging Face Spaces — free, permanent, private
+
+`deploy/huggingface.md` walks it end to end: Space + secrets + `git push`. Pair it with
+step B so the book lives in Git, not on an ephemeral Space disk.
+
+---
 
 ## Run it live
 
@@ -212,7 +283,10 @@ mim/
   views/                one module per page
 Dockerfile              production image (non-root, healthcheck, /app/data volume)
 docker-compose.yml      app + optional Caddy HTTPS, persistent book volume
+render.yaml             Render Blueprint (one-click, disk + secrets declared)
+fly.toml                Fly.io app with a volume mounted at /app/data
 deploy/install.sh       one-command install for a fresh Debian/Ubuntu server
 deploy/Caddyfile        automatic TLS + websocket-safe reverse proxy
+deploy/huggingface.md   Hugging Face Spaces walkthrough
 .env.example            access code, domain, timezone
 ```

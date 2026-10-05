@@ -123,20 +123,41 @@ def render(ctx: dict[str, Any]) -> None:
         st.caption("Tier is computed from days overdue. MIM drafts the copy; you decide when it lands.")
 
     with tab_book:
-        st.markdown("### Book data")
+        st.markdown("### Where the book lives")
         health = service.storage_health()
-        st.caption(f'Stored as JSON in `{health["path"]}` — one file per pillar. Portable, auditable, yours.')
-        if not health["writable"]:
-            st.error("This filesystem is read-only. Changes will not survive a restart — export the book and "
-                     "point MIM_DATA_DIR at a mounted volume.", icon="🔒")
-        elif "app" in health["path"]:
-            st.info("Running in a container. With a mounted volume the book persists; without one it resets on "
-                    "rebuild. Export regularly, or mount a volume at `/app/data`.", icon="📦")
+        if health["backend"] == "github":
+            if health["last_error"]:
+                st.error(f'**Sync failing.** {health["last_error"]} Your changes are safe on this server '
+                         f'({" · ".join(health["pending_push"]) or "no pending writes"}) and will push on the '
+                         f'next successful sync.', icon="🔴")
+            else:
+                st.success(f'**Synced to your private repo** `{health["repo"]}` ({health["branch"]}/{health["path"]})'
+                           + (f' · last push {health["last_sync"]}' if health["last_sync"] else "")
+                           + ". Every save is a commit, and every commit is a restore point.", icon="✅")
+            st.caption("The book survives restarts, redeploys and host migrations because it lives in Git, "
+                       "not in a container disk.")
+        else:
+            st.caption(f'Stored as JSON in `{health["path"]}` — one file per pillar. Portable, auditable, yours.')
+            if not health["writable"]:
+                st.error("This filesystem is read-only. Changes will not survive a restart — export the book and "
+                         "point MIM_DATA_DIR at a mounted volume.", icon="🔒")
+            elif "app" in health["path"] or "tmp" in health["path"]:
+                st.warning("Local disk only. On a host with an ephemeral filesystem this book resets on restart — "
+                           "connect a private data repo (see `GITHUB_TOKEN` / `MIM_DATA_REPO` in the README) or "
+                           "mount a volume at `/app/data`.", icon="📦")
 
         payload = json.dumps(store.dump(), indent=2)
-        c1, c2 = st.columns(2)
+        c1, c2, c3 = st.columns([1, 1, 1])
         c1.download_button("Export full book (JSON)", payload, file_name="mem_digital_book.json",
                            mime="application/json", width="stretch")
+        if health["backend"] == "github" and c3.button("Sync now", width="stretch",
+                                                       help="Retry pending pushes, then pull fresh state."):
+            after = service.sync_book()
+            if after["last_error"]:
+                st.error(after["last_error"])
+            else:
+                toast("Book synced")
+                st.rerun()
         upload = c2.file_uploader("Restore from JSON", type=["json"], label_visibility="collapsed")
         if upload is not None:
             c1, c2, c3 = st.columns([1, 1, 2])

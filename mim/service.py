@@ -463,9 +463,20 @@ def import_book(payload: dict[str, Any], merge: bool = False) -> dict[str, int]:
 
 def storage_health() -> dict[str, Any]:
     """What the operator needs to know about where the book actually lives."""
-    from .store import DATA_DIR, writable
+    from . import store
 
-    return {"path": str(DATA_DIR), "writable": writable(), "sample": bool(load("settings", {}).get("sample_data"))}
+    health = store.status()
+    health["writable"] = store.writable()
+    health["sample"] = bool(load("settings", {}).get("sample_data"))
+    return health
+
+
+def sync_book() -> dict[str, Any]:
+    """Push anything the remote rejected, then pull fresh state."""
+    from . import store
+
+    store.sync_now()
+    return store.status()
 
 
 def require_password() -> bool:
