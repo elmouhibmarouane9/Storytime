@@ -1,2 +1,9 @@
 __pycache__
+*.pyc
 .env
+.pytest_cache
+
+# The book is real client data. Keep it out of Git by default.
+# Want it versioned? Delete the line below — the JSON is plain and diff-friendly.
+data/
+.streamlit/secrets.toml
