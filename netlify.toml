@@ -1,0 +1,20 @@
+[build]
+command = "npm run build"
+publish = "dist"
+
+[functions]
+directory = "netlify/functions"
+node_bundler = "esbuild"
+
+[dev]
+command = "npm run dev"
+targetPort = 5173
+port = 8889
+
+[[headers]]
+for = "/*"
+[headers.values]
+X-Content-Type-Options = "nosniff"
+Referrer-Policy = "same-origin"
+X-Frame-Options = "DENY"
+Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"

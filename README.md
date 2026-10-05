@@ -8,6 +8,52 @@ Communications** — and it ends every page the way it ends every conversation:
 
 No filler. No dashboards that only report. Every screen tells you what to do next and why.
 
+## Deploy on Netlify
+
+The repository now includes a Netlify-native web console alongside the original Streamlit
+application. Netlify publishes the web console from `dist`, runs the authenticated API in
+Netlify Functions, and stores each account's operations book in Netlify Database. It does
+not launch a Python server, require Cloudflare tunnels, or depend on a running laptop.
+
+Deploy this repository with its included `netlify.toml`. The configured build is
+`npm run build`, and the publish directory is `dist`. The included database migrations
+are applied by Netlify during deployment. Netlify Identity is activated by the included
+feature marker.
+
+Open the deployed site, create an account, and confirm the email before signing in.
+If registration is disabled, use **Project configuration → Identity** to invite yourself;
+the app handles invitation links and password recovery. For a solo agency, set registration
+to **Invite only** after creating your account. Unlike the Streamlit shared access code,
+each account has its **own private book**; accounts do not share agency data.
+
+The seven web pages cover the dashboard, clients, invoices, finance, projects, communications,
+and settings. A new account gets the original fictional sample book. **Settings → Start a
+clean book** clears the samples, while **Restore a JSON book** imports a complete export
+from the Streamlit console. Export your existing book before switching hosts; local files
+and Git-backend books are not automatically copied. Advanced record editors preserve
+tasks, deliverables, approvals, time entries, change orders, and other existing fields.
+
+The web console supports payment logging, printable invoice downloads, weighted delivery
+tracking, time and change-order billing, and the original English/Spanish communication
+templates. Drafts are editable and downloadable; **Log as sent** only records a message
+you already sent. Concurrent edits are rejected rather than silently overwriting another
+tab's changes. Books are limited to 2 MB per save and 2,000 records per collection.
+
+For local web development:
+
+```bash
+npm install
+netlify dev --port 8889
+```
+
+Use `npm test` for the web engine/API tests and `npm run typecheck` for TypeScript checks.
+For browser checks, install Chromium with `npx playwright install chromium` and run
+`npm run test:browser` (requires the Netlify CLI).
+The original Python test suite and Streamlit deployment options remain available below.
+The static sample preview requires no account and never saves changes.
+
+## Original Streamlit application
+
 ```bash
 pip install -r requirements.txt
 streamlit run streamlit_app.py
@@ -59,6 +105,10 @@ Drafts are **never sent** by MIM. They arrive editable with `.md` / `.txt` / `.h
 downloads; you send from your own inbox and hit "Log as sent".
 
 ## Data model
+
+The Netlify web console uses owner-scoped Postgres rows for records and agency settings,
+with transactional saves and revision checks. The disk/Git backends described in this
+section apply only to the original Streamlit application, not the Netlify deployment.
 
 Plain JSON in `data/`, one file per collection, written atomically:
 
