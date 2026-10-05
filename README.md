@@ -73,27 +73,124 @@ data/messages.json   every logged touch, with channel, direction and reminder ti
 `data/` is git-ignored by default — your client data shouldn't live in a repo. Export the full book
 as JSON from **Settings → Book** any time.
 
-## Deployment
+## Run it live
 
-The console runs anywhere Streamlit runs (Streamlit Community Cloud, a VM, a container).
+Five real paths. Pick by where the data lives, not by what's fashionable.
 
-- **Gate it.** Set `MIM_ACCESS_CODE` and the app asks for a code before rendering anything:
-  ```bash
-  MIM_ACCESS_CODE=your-code streamlit run streamlit_app.py
-  ```
-- **Time-travel the forecast** for demos by pinning the clock: `MIM_TODAY=2026-12-01`.
-- **Point it at another volume:** `MIM_DATA_DIR=/path/to/book`.
+| Path | Cost | Where the book lives | Effort | Use it for |
+|---|---|---|---|---|
+| **This sandbox preview** | free | sandbox container, dies with the session | none | showing it off today |
+| **Your machine + a tunnel** | €0 | your own disk, never leaves the room | 5 min | solo operator, always-on laptop or mini-PC |
+| **Your own server** | ~€4/mo | Docker volume on the VPS, your domain, HTTPS | 10 min | production — always on, no laptop tax |
+| **Render / Railway / Fly.io** | $5-7/mo | managed volume | 10 min | git-push deploys without touching a server |
+| **Streamlit Community Cloud** | €0 | **container disk, wiped on restart** | 5 min | demos only — see the warning below |
+
+---
+
+### 1. Your machine + a tunnel — €0, data stays home
+
+The console runs on your laptop, the tunnel makes it reachable from your phone. Nothing is uploaded anywhere.
+
+```bash
+# terminal 1 — the console
+pip install -r requirements.txt
+MIM_ACCESS_CODE=your-code streamlit run streamlit_app.py
+
+# terminal 2 — the public URL (prints an https://...trycloudflare.com address)
+brew install cloudflared          # macOS
+winget install Cloudflare.cloudflared   # Windows
+cloudflared tunnel --url http://localhost:8501
+```
+
+An account-free quick tunnel gives you a **random URL that changes on every restart**. For a fixed address, run a named tunnel against a domain you own (`cloudflared tunnel login && cloudflared tunnel create mim`). Your machine has to stay on; the book stays in `data/` next to the code.
+
+Prefer private over public? `tailscale up` and open the machine's tailnet IP instead — no public URL, no access code needed, only your devices can see it.
+
+---
+
+### 2. Your own server — ~€4/month, the production answer
+
+Hetzner CX22 (~€4), Contabo (~€4.50), DigitalOcean ($6). Debian or Ubuntu, any size — the app is idle-friendly.
+
+**One command on a fresh server:**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/elmouhibmarouane9/Storytime/arena/01a10c7b-storytime/deploy/install.sh | bash
+```
+
+It installs Docker, clones the console into `/opt/mim`, generates an access code, asks for a domain (blank = localhost only), and starts everything. Point an A record at the server first if you want HTTPS — Caddy fetches the certificate automatically, websockets included.
+
+**Or by hand, if you'd rather see every step:**
+
+```bash
+git clone --branch arena/01a10c7b-storytime https://github.com/elmouhibmarouane9/Storytime.git /opt/mim
+cd /opt/mim
+cp .env.example .env && nano .env        # set MIM_ACCESS_CODE (openssl rand -hex 12) and MIM_DOMAIN
+docker compose --profile https up -d --build
+docker compose logs -f mim               # watch it boot
+```
+
+No domain yet? Drop the profile and use an SSH tunnel from your laptop:
+
+```bash
+docker compose up -d                     # app bound to 127.0.0.1:8501 only
+ssh -L 8501:127.0.0.1:8501 root@YOUR_SERVER   # then open http://localhost:8501
+```
+
+| Operation | Command |
+|---|---|
+| Update to latest code | `git pull && docker compose up -d --build` |
+| Stop / start | `docker compose down` · `docker compose up -d` |
+| Logs | `docker compose logs -f mim` |
+| Back up the book | `docker compose exec mim cat /app/data/clients.json > backups/clients.json` |
+| Restore | Settings → Book → Restore from JSON |
+
+The book lives in the **`mim-data` Docker volume**, not the image — rebuilding never touches it. `backups/` on the host is mounted into the container for off-server copies.
+
+---
+
+### 3. Streamlit Community Cloud — €0, with one honest caveat
+
+Fastest public URL, and the caveat matters: **the container filesystem is ephemeral.** Add a client, the platform sleeps the app, your data is gone. Use it to demo, not to run the agency.
+
+1. Push this repo to GitHub, then [share.streamlit.io](https://share.streamlit.io) → **New app** → repo + branch → main file `streamlit_app.py`.
+2. **Advanced settings → Secrets**, paste:
+   ```toml
+   MIM_ACCESS_CODE = "your-code"
+   ```
+   The console reads it from `st.secrets` when the environment variable is absent.
+3. To move real data in: Settings → Book → **Restore from JSON** (upload an export). Before you leave the session, Settings → Book → **Export** and keep the JSON.
+
+---
+
+### 4. Render / Railway / Fly.io — git-push with a real disk
+
+All three build the included `Dockerfile` as-is. The only requirement: **mount a volume at `/app/data`**, otherwise you inherit the ephemeral-disk problem.
+
+| Platform | Setup |
+|---|---|
+| **Render** | New → Web Service → Docker → add a Disk, mount path `/app/data`; set `MIM_ACCESS_CODE` in Environment. Free tier has no disks — that's a paid-plan feature, and it's the whole point. |
+| **Railway** | New Project → Deploy from repo → Variables: `MIM_ACCESS_CODE`; add a Volume mounted at `/app/data`. |
+| **Fly.io** | `fly launch --no-deploy` → `fly volumes create mim_data --size 1` → mount at `/app/data` → `fly secrets set MIM_ACCESS_CODE=...` → `fly deploy`. |
+
+---
+
+### The gate, everywhere
+
+Set `MIM_ACCESS_CODE` (env var, or `st.secrets` on Streamlit Cloud) and the console refuses to render until the code is entered. **Settings shows the gate status in red when it is not armed** — do not leave it that way on a public URL: your Finance page is your cash position.
+
+Move a book between hosts with Settings → Book → Export / Restore. Same JSON, any host.
 
 ## Tests
 
 ```bash
 pip install -r requirements-dev.txt
-python -m pytest tests/ -q     # 60 tests
+python -m pytest tests/ -q     # 64 tests
 ```
 
 - `tests/test_engine.py` — invoice maths, aging buckets, effective status, FX conversion, weighted
   forecasting, health scoring, deadline risk, scope-creep detection, time-to-invoice conversion,
-  template rendering in both languages, move ranking and dedupe.
+  template rendering in both languages, move ranking and dedupe, export/import round-trips.
 - `tests/test_app.py` — headless render of all seven pages plus the language switch, via Streamlit's
   own `AppTest`. A broken page fails the build.
 
@@ -113,4 +210,9 @@ mim/
   models.py             schema constants, ids, dates, money formatting
   ui.py                 theme, KPI cards, tables, draft surface
   views/                one module per page
+Dockerfile              production image (non-root, healthcheck, /app/data volume)
+docker-compose.yml      app + optional Caddy HTTPS, persistent book volume
+deploy/install.sh       one-command install for a fresh Debian/Ubuntu server
+deploy/Caddyfile        automatic TLS + websocket-safe reverse proxy
+.env.example            access code, domain, timezone
 ```

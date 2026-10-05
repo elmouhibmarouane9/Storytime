@@ -1,0 +1,15 @@
+# Keep the image small and the client data out of it.
+.git
+.github
+.devcontainer
+.venv
+__pycache__
+*.pyc
+.pytest_cache
+data
+backups
+tests
+.env
+.streamlit/secrets.toml
+*.md
+!README.md

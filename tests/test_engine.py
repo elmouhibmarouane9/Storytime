@@ -404,6 +404,35 @@ def test_service_crud_cycle(book):
     assert client["last_contact"] == store.today().isoformat()
 
 
+def test_export_then_import_round_trips(book):
+    exported = store.dump()
+    service.wipe_book(sample=False)
+    assert store.load("clients") == []
+    written = service.import_book(exported)
+    assert written["clients"] == 5
+    restored = store.load("clients")
+    assert {c["id"] for c in restored} == {"C-001", "C-002", "C-003", "C-004", "C-005"}
+    assert store.load("settings")["targets"]["monthly_revenue"] == 18000
+
+
+def test_import_merge_skips_duplicate_ids(book):
+    exported = store.dump()
+    written = service.import_book(exported, merge=True)
+    assert written["clients"] == 0            # same ids already present
+    assert len(store.load("clients")) == 5
+
+
+def test_import_ignores_unknown_collections(book):
+    written = service.import_book({"clients": store.load("clients"), "junk": [1, 2, 3]})
+    assert "junk" not in written
+
+
+def test_storage_health_reports_path_and_writability(book):
+    health = service.storage_health()
+    assert health["writable"] is True
+    assert health["path"].endswith("data") or "mim-test-book" in health["path"]
+
+
 def test_service_can_reset_to_clean_book(book):
     service.wipe_book(sample=False)
     assert store.load("clients") == []

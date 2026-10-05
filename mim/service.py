@@ -439,20 +439,47 @@ def wipe_book(sample: bool = False) -> None:
         update_settings({"sample_data": False})
 
 
-def require_password() -> bool:
-    """Optional gate for a public Streamlit deploy. No password set = no gate."""
+def access_code() -> str:
+    """Read the gate code from the environment, or from Streamlit secrets on Cloud."""
     import os
 
     import streamlit as st
 
-    expected = os.environ.get("MIM_ACCESS_CODE", "").strip()
+    code = os.environ.get("MIM_ACCESS_CODE", "").strip()
+    if code:
+        return code
+    try:
+        return str(st.secrets.get("MIM_ACCESS_CODE", "")).strip()
+    except Exception:  # no secrets.toml present — that is a valid configuration
+        return ""
+
+
+def import_book(payload: dict[str, Any], merge: bool = False) -> dict[str, int]:
+    """Restore a book exported from another deployment or a local backup."""
+    from .store import import_book as store_import
+
+    return store_import(payload, merge=merge)
+
+
+def storage_health() -> dict[str, Any]:
+    """What the operator needs to know about where the book actually lives."""
+    from .store import DATA_DIR, writable
+
+    return {"path": str(DATA_DIR), "writable": writable(), "sample": bool(load("settings", {}).get("sample_data"))}
+
+
+def require_password() -> bool:
+    """Optional gate for a public deploy. No code set = no gate (fine for localhost)."""
+    import streamlit as st
+
+    expected = access_code()
     if not expected:
         return True
     if st.session_state.get("mim_unlocked"):
         return True
     st.markdown("### MIM access")
     entered = st.text_input("Access code", type="password", key="mim_code")
-    if st.button("Unlock"):
+    if st.button("Unlock", key="mim_unlock"):
         if entered.strip() == expected:
             st.session_state["mim_unlocked"] = True
             st.rerun()

@@ -21,6 +21,12 @@ def render(ctx: dict[str, Any]) -> None:
     cadence = settings.get("cadence_days") or {}
 
     st.markdown("## Settings")
+    gate = service.access_code()
+    if gate:
+        st.success(f"Access gate armed — {len(gate)}-character code required to open the console.", icon="🔐")
+    else:
+        st.warning("**No access code set.** Anyone with this URL sees your ledger. Set `MIM_ACCESS_CODE` "
+                   "(or `MIM_ACCESS_CODE` in Streamlit secrets) before this runs anywhere public.", icon="🚨")
     if settings.get("sample_data"):
         st.warning("This book is sample data. Load in your real clients, then hit **Start a clean book** below.", icon="⚠️")
 
@@ -118,10 +124,33 @@ def render(ctx: dict[str, Any]) -> None:
 
     with tab_book:
         st.markdown("### Book data")
-        st.caption(f'Stored as JSON in `{store.DATA_DIR}` — one file per pillar. Portable, auditable, yours.')
+        health = service.storage_health()
+        st.caption(f'Stored as JSON in `{health["path"]}` — one file per pillar. Portable, auditable, yours.')
+        if not health["writable"]:
+            st.error("This filesystem is read-only. Changes will not survive a restart — export the book and "
+                     "point MIM_DATA_DIR at a mounted volume.", icon="🔒")
+        elif "app" in health["path"]:
+            st.info("Running in a container. With a mounted volume the book persists; without one it resets on "
+                    "rebuild. Export regularly, or mount a volume at `/app/data`.", icon="📦")
+
         payload = json.dumps(store.dump(), indent=2)
-        st.download_button("Export full book (JSON)", payload, file_name="mem_digital_book.json",
+        c1, c2 = st.columns(2)
+        c1.download_button("Export full book (JSON)", payload, file_name="mem_digital_book.json",
                            mime="application/json", width="stretch")
+        upload = c2.file_uploader("Restore from JSON", type=["json"], label_visibility="collapsed")
+        if upload is not None:
+            c1, c2, c3 = st.columns([1, 1, 2])
+            merge = c2.checkbox("Merge instead of replace", value=False,
+                                help="Merge appends records with new ids; replace overwrites the whole book.")
+            if c1.button("Restore book", type="primary", width="stretch"):
+                try:
+                    written = service.import_book(json.loads(upload.getvalue().decode("utf-8")), merge=merge)
+                except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+                    st.error(f"That file is not valid book JSON: {exc}")
+                else:
+                    summary = " · ".join(f"{count} {name}" for name, count in written.items() if count)
+                    toast(f"Restored: {summary or 'nothing found in that file'}")
+                    st.rerun()
 
         rule()
         st.markdown("### Danger zone")

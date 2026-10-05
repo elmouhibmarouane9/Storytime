@@ -70,3 +70,37 @@ def bootstrap(force: bool = False) -> None:
 
 def dump() -> dict[str, Any]:
     return {name: load(name) for name in COLLECTIONS}
+
+
+def import_book(payload: dict[str, Any], merge: bool = False) -> dict[str, int]:
+    """Restore a book from an exported JSON. `merge` appends instead of replacing.
+
+    Returns {collection: records written}. Unknown keys are ignored, never guessed at.
+    """
+    written: dict[str, int] = {}
+    for name in COLLECTIONS:
+        if name not in payload:
+            continue
+        incoming = payload[name]
+        if merge and name != "settings":
+            existing = load(name, [])
+            seen = {row.get("id") for row in existing}
+            combined = existing + [row for row in incoming if row.get("id") not in seen]
+            save(name, combined)
+            written[name] = len(combined) - len(existing)
+        else:
+            save(name, incoming)
+            written[name] = len(incoming) if isinstance(incoming, list) else 1
+    return written
+
+
+def writable() -> bool:
+    """Can the process actually persist? Ephemeral hosts say yes until they don't."""
+    try:
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
+        probe = DATA_DIR / ".mim-write-probe"
+        probe.write_text("ok", encoding="utf-8")
+        probe.unlink()
+        return True
+    except OSError:
+        return False
