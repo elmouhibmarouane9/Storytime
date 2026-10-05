@@ -87,7 +87,7 @@ Three routes to a URL that outlives this session. The links below are pre-filled
 
 ### A. Streamlit Community Cloud — free, 2 minutes, permanent URL
 
-**[→ Deploy now](https://share.streamlit.io/deploy?repository=elmouhibmaroune9/Storytime&branch=arena/01a10c7b-storytime&mainModule=streamlit_app.py)**
+**[→ Deploy now](https://share.streamlit.io/deploy?repository=elmouhibmaroune9/Storytime&branch=main&mainModule=streamlit_app.py)**
 
 Sign in with GitHub, confirm the repo + branch + `streamlit_app.py`, then paste this into
 **Advanced settings → Secrets**:
@@ -131,7 +131,7 @@ permanent book and a recurring data loss. The Render disk requires the Starter p
 Full control, no platform in the middle:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/elmouhibmarouane9/Storytime/arena/01a10c7b-storytime/deploy/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/elmouhibmarouane9/Storytime/main/deploy/install.sh | bash
 ```
 
 One command: installs Docker, clones to `/opt/mim`, generates your access code, asks for a
@@ -186,7 +186,7 @@ Hetzner CX22 (~€4), Contabo (~€4.50), DigitalOcean ($6). Debian or Ubuntu, a
 **One command on a fresh server:**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/elmouhibmarouane9/Storytime/arena/01a10c7b-storytime/deploy/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/elmouhibmarouane9/Storytime/main/deploy/install.sh | bash
 ```
 
 It installs Docker, clones the console into `/opt/mim`, generates an access code, asks for a domain (blank = localhost only), and starts everything. Point an A record at the server first if you want HTTPS — Caddy fetches the certificate automatically, websockets included.
@@ -194,7 +194,7 @@ It installs Docker, clones the console into `/opt/mim`, generates an access code
 **Or by hand, if you'd rather see every step:**
 
 ```bash
-git clone --branch arena/01a10c7b-storytime https://github.com/elmouhibmarouane9/Storytime.git /opt/mim
+git clone https://github.com/elmouhibmarouane9/Storytime.git /opt/mim
 cd /opt/mim
 cp .env.example .env && nano .env        # set MIM_ACCESS_CODE (openssl rand -hex 12) and MIM_DOMAIN
 docker compose --profile https up -d --build

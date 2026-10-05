@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # MIM · MEM Digital — one-command install on a fresh Debian/Ubuntu server.
 #
-#   curl -fsSL https://raw.githubusercontent.com/elmouhibmarouane9/Storytime/arena/01a10c7b-storytime/deploy/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/elmouhibmarouane9/Storytime/main/deploy/install.sh | bash
 #
 # Or clone first and run:  bash deploy/install.sh
 #
@@ -12,7 +12,7 @@
 set -euo pipefail
 
 REPO="${MIM_REPO:-https://github.com/elmouhibmarouane9/Storytime.git}"
-BRANCH="${MIM_BRANCH:-arena/01a10c7b-storytime}"   # switch to main once the PR is merged
+BRANCH="${MIM_BRANCH:-main}"   # main is the shipping branch; override with MIM_BRANCH=...
 DIR="${MIM_DIR:-/opt/mim}"
 
 say() { printf '\n\033[1;33m▸ %s\033[0m\n' "$1"; }

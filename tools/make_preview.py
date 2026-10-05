@@ -682,9 +682,9 @@ LIVE_BODY = """<p class="cap">The preview link dies with this session. Three way
 </div>"""
 
 DEPLOY_URL = ("https://share.streamlit.io/deploy?repository=elmouhibmarouane9/Storytime"
-              "&amp;branch=arena/01a10c7b-storytime&amp;mainModule=streamlit_app.py")
+              "&amp;branch=main&amp;mainModule=streamlit_app.py")
 INSTALL_CMD = ("curl -fsSL https://raw.githubusercontent.com/elmouhibmarouane9/Storytime/"
-               "arena/01a10c7b-storytime/deploy/install.sh | bash")
+               "main/deploy/install.sh | bash")
 
 
 def live_body() -> str:

@@ -32,7 +32,7 @@ pinned: false
 
 ```bash
 git remote add space https://huggingface.co/spaces/<your-user>/mim
-git push space arena/01a10c7b-storytime:main
+git push space main:main
 ```
 
 (HF builds from `main` in the Space repo, whatever your local branch is called.)
@@ -54,7 +54,7 @@ commit in `mim-book` — your data, your history, your restore points.
 
 - **URL:** `https://<your-user>-mim.hf.space` — permanent, HTTPS, shareable.
 - **Book:** `github.com/your-user/mim-book` — plain JSON, diffable, restorable.
-- **Updates:** `git push space arena/01a10c7b-storytime:main` rebuilds the Space.
+- **Updates:** `git push space main:main` rebuilds the Space.
 - **Offline copy:** Settings → Book → Export.
 
 Free Spaces sleep after inactivity and wake on the next request — expect a few seconds of
