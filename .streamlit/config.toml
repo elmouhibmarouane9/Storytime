@@ -1,0 +1,22 @@
+[server]
+headless = true
+address = "0.0.0.0"
+port = 8501
+# Required for embedding behind a proxied preview host / Streamlit Cloud iframe.
+enableCORS = false
+enableXsrfProtection = false
+enableWebsocketCompression = false
+
+[browser]
+gatherUsageStats = false
+
+[client]
+showErrorDetails = true
+toolbarMode = "minimal"
+
+[theme]
+base = "dark"
+primaryColor = "#E9B949"
+backgroundColor = "#0A0D11"
+secondaryBackgroundColor = "#111823"
+textColor = "#F3F6F9"

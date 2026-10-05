@@ -1,0 +1,54 @@
+# MIM · MEM Digital — one server, one book, one command.
+#
+#   docker compose up -d                     -> app on 127.0.0.1:8501 (SSH tunnel / local)
+#   docker compose --profile https up -d     -> public HTTPS on $MIM_DOMAIN via Caddy
+#
+# Copy .env.example to .env and fill it in first. The book lives in the `mim-data`
+# volume, so rebuilds and restarts never touch your data.
+
+services:
+  mim:
+    build: .
+    image: mim-console:latest
+    container_name: mim
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      MIM_DATA_DIR: /app/data
+      TZ: ${TZ:-Europe/Madrid}
+    volumes:
+      - mim-data:/app/data          # the book — persistent, atomic JSON
+      - ./backups:/app/backups      # drop exported JSON here for off-server copies
+    ports:
+      - "127.0.0.1:8501:8501"       # not public: Caddy (or an SSH tunnel) fronts it
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8501/_stcore/health', timeout=4)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 25s
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: mim-caddy
+    profiles: ["https"]
+    restart: unless-stopped
+    depends_on:
+      mim:
+        condition: service_healthy
+    environment:
+      MIM_DOMAIN: ${MIM_DOMAIN:?set MIM_DOMAIN in .env (e.g. ops.memdigital.studio)}
+      MIM_EMAIL: ${MIM_EMAIL:-}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data            # certificates survive restarts
+      - caddy-config:/config
+
+volumes:
+  mim-data:
+  caddy-data:
+  caddy-config:

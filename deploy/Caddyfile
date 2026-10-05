@@ -1,0 +1,27 @@
+# Caddy terminates TLS and proxies to the console. Certificates are automatic.
+# Websockets (Streamlit) are proxied natively — no extra configuration.
+
+{
+	email {$MIM_EMAIL}
+}
+
+{$MIM_DOMAIN} {
+	encode zstd gzip
+
+	# Streamlit needs the real host/origin to accept websocket upgrades.
+	reverse_proxy mim:8501 {
+		header_up Host {host}
+		header_up X-Real-IP {remote_host}
+		header_up X-Forwarded-For {remote_host}
+		header_up X-Forwarded-Proto {scheme}
+		flush_interval -1
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "no-referrer"
+		-Server
+	}
+}

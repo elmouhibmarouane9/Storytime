@@ -1,0 +1,36 @@
+# Render Blueprint — one-click permanent hosting for the MIM console.
+#
+#   1. Push this repo (or merge the PR so `main` has it).
+#   2. Render dashboard -> New -> Blueprint -> pick this repo.
+#   3. Paste MIM_ACCESS_CODE when prompted (it is marked `sync: false`).
+#
+# The disk below requires a paid instance type (Starter, ~$7/mo). If you stay on
+# the free plan instead, delete the `disk:` block and use the github storage
+# backend (GITHUB_TOKEN + MIM_DATA_REPO) so your book survives restarts — a free
+# instance without either one resets your data on every deploy.
+
+services:
+  - type: web
+    name: mim-console
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter
+    region: frankfurt
+    healthCheckPath: /_stcore/health
+    autoDeploy: true
+    envVars:
+      - key: MIM_ACCESS_CODE
+        sync: false            # set in the dashboard — never in the repo
+      - key: MIM_DATA_DIR
+        value: /app/data
+      - key: TZ
+        value: Europe/Madrid
+      # Optional: keep the book in Git as well as (or instead of) the disk.
+      - key: GITHUB_TOKEN
+        sync: false
+      - key: MIM_DATA_REPO
+        sync: false            # e.g. yourname/mim-book
+    disk:
+      name: mim-book
+      mountPath: /app/data
+      sizeGB: 1
