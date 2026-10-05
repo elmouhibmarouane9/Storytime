@@ -288,5 +288,7 @@ fly.toml                Fly.io app with a volume mounted at /app/data
 deploy/install.sh       one-command install for a fresh Debian/Ubuntu server
 deploy/Caddyfile        automatic TLS + websocket-safe reverse proxy
 deploy/huggingface.md   Hugging Face Spaces walkthrough
+tools/make_preview.py   regenerates docs/preview/index.html — a shareable static
+                        walkthrough built from the same engine the app calls
 .env.example            access code, domain, timezone
 ```
