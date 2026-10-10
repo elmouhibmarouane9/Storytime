@@ -629,3 +629,58 @@ def test_an_unknown_step_cannot_be_logged():
     playbook.add_lead(a_lead())
     with pytest.raises(playbook.PlaybookError, match="Unknown outreach step"):
         playbook.log_step_sent("L-001", "day30_please")
+
+
+# ---------------------------------------------------------------- per-language detail
+
+
+def test_a_language_matched_detail_replaces_the_spanish_note():
+    lead = a_lead(detail_i18n={
+        "en": "the room photos are still from the 2019 refurb",
+        "es": "las fotos son de la reforma de 2019",
+        "fr": "les photos datent encore de la rénovation de 2019",
+    })
+    assert "still from the 2019 refurb" in playbook.outreach_draft("first_touch", lead, "EN")["body"]
+    assert "reforma de 2019" in playbook.outreach_draft("first_touch", lead, "ES")["body"]
+    assert "rénovation de 2019" in playbook.outreach_draft("first_touch", lead, "FR")["body"]
+
+
+def test_a_spanish_note_never_leaks_into_the_french_message():
+    lead = a_lead(detail_i18n={"fr": "les photos datent de la rénovation de 2019"})
+    body = playbook.outreach_draft("first_touch", lead, "FR")["body"]
+    assert "txuleta" not in body
+
+
+def test_the_bundle_accepts_a_question_per_language():
+    per_lang = {
+        "EN": {"question": "How many bookings come straight through your own site?"},
+        "ES": {"question": "¿Cuántas reservas os entran por la web?"},
+        "FR": {"question": "Combien de réservations passent par votre propre site ?"},
+    }
+    bundle = playbook.outreach_bundle(a_lead(), per_lang)
+    assert "straight through your own site" in bundle["EN"][0]["body"]
+    assert "por la web" in bundle["ES"][0]["body"]
+    assert "votre propre site" in bundle["FR"][0]["body"]
+    assert all(bundle[c][0]["ready_for_review"] for c in LANGUAGES)
+
+
+def test_a_flat_extra_still_applies_to_every_language():
+    bundle = playbook.outreach_bundle(a_lead(), {"question": "Who chalks the board?"})
+    assert all("Who chalks the board?" in bundle[c][0]["body"] for c in LANGUAGES)
+
+
+def test_the_detail_slot_survives_being_a_full_clause():
+    """A clause in {detail} must not produce broken grammar in any language."""
+    lead = a_lead(detail_i18n={
+        "en": "the room photos are still from the 2019 refurb",
+        "es": "las fotos son de la reforma de 2019",
+        "fr": "les photos datent de la rénovation de 2019",
+    })
+    assert "What stuck: the room photos are still from the 2019 refurb" in \
+        playbook.outreach_draft("first_touch", lead, "EN")["body"]
+    assert "Lo que se me quedó grabado: las fotos son de la reforma de 2019" in \
+        playbook.outreach_draft("first_touch", lead, "ES")["body"]
+    assert "Ce qui m'a marqué : les photos datent de la rénovation de 2019" in \
+        playbook.outreach_draft("first_touch", lead, "FR")["body"]
+    for code in LANGUAGES:
+        assert "one post about" not in playbook.outreach_draft("day3_reminder", lead, code)["body"]

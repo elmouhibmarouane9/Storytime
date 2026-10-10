@@ -402,6 +402,7 @@ def new_lead(
     reply: str = "",
     next_step: str = "",
     existing: list[dict] | None = None,
+    detail_i18n: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     """A lead tracker row. The eight public columns plus the internals."""
     if not business.strip():
@@ -425,6 +426,9 @@ def new_lead(
         "language": normalize_lang(language),
         "signals_matched": list(signals_matched or []),
         "sent_steps": [],
+        # The same observation written per language, so a Spanish note does not
+        # end up pasted into the French message.
+        "detail_i18n": detail_i18n or {},
     }
 
 
@@ -511,21 +515,21 @@ OUTREACH: dict[str, dict[str, Any]] = {
         "label": {"en": "First message", "es": "Primer mensaje", "fr": "Premier message"},
         "en": """Hi {first_name},
 
-I came across {business} while looking at {niche} in {city}. {detail} is the thing that stuck — it's exactly the sort of detail most places around here never put online.
+I came across {business} while looking at {niche} in {city}. What stuck: {detail} — exactly the sort of thing most places around here never put online.
 
 One question, and there's nothing being sold in it: {question}
 
 {sender}""",
         "es": """Hola {first_name},
 
-Encontré {business} buscando {niche} en {city}. Lo que se me quedó grabado es esto: {detail}. Es justo el tipo de detalle que casi nadie por aquí muestra en internet.
+Encontré {business} buscando {niche} en {city}. Lo que se me quedó grabado: {detail} — justo el tipo de cosa que casi nadie por aquí muestra en internet.
 
 Una pregunta, y no hay nada en venta dentro: {question}
 
 {sender}""",
         "fr": """Bonjour {first_name},
 
-Je suis tombé sur {business} en cherchant {niche} à {city}. Ce qui m'a marqué, c'est ceci : {detail}. C'est exactement le genre de détail que presque personne ici ne met en ligne.
+Je suis tombé sur {business} en cherchant {niche} à {city}. Ce qui m'a marqué : {detail} — exactement le genre de chose que presque personne ici ne met en ligne.
 
 Une question, et il n'y a rien à vendre dedans : {question}
 
@@ -538,7 +542,7 @@ Une question, et il n'y a rien à vendre dedans : {question}
 
 No reply needed if the timing is wrong.
 
-If it isn't: I'll make {business} one post about {detail}. Free, under an hour of my time, yours to keep whether we ever work together or not. If you like it, we talk. If you don't, you've lost nothing.
+If it isn't: I'll make {business} one post. The angle: {detail}. Free, under an hour of my time, yours to keep whether we ever work together or not. If you like it, we talk. If you don't, you've lost nothing.
 
 Want me to send it?
 
@@ -547,7 +551,7 @@ Want me to send it?
 
 No hace falta que respondas si no es el momento.
 
-Si lo es: le hago a {business} una publicación sobre {detail}. Gratis, menos de una hora de mi tiempo, y se queda contigo trabajemos juntos o no. Si te gusta, hablamos. Si no, no has perdido nada.
+Si lo es: le hago a {business} una publicación. El ángulo: {detail}. Gratis, menos de una hora de mi tiempo, y se queda contigo trabajemos juntos o no. Si te gusta, hablamos. Si no, no has perdido nada.
 
 ¿Te la envío?
 
@@ -556,7 +560,7 @@ Si lo es: le hago a {business} una publicación sobre {detail}. Gratis, menos de
 
 Pas besoin de répondre si ce n'est pas le moment.
 
-Si ça l'est : je fais pour {business} une publication sur {detail}. Gratuite, moins d'une heure de mon temps, et elle reste à vous que l'on travaille ensemble ou non. Si elle vous plaît, on en parle. Sinon, vous n'avez rien perdu.
+Si ça l'est : je fais pour {business} une publication. L'angle : {detail}. Gratuite, moins d'une heure de mon temps, et elle reste à vous que l'on travaille ensemble ou non. Si elle vous plaît, on en parle. Sinon, vous n'avez rien perdu.
 
 Je vous l'envoie ?
 
@@ -623,7 +627,7 @@ def outreach_context(lead: dict[str, Any], extra: dict[str, Any] | None = None, 
         "business": lead.get("business") or "{business}",
         "niche": niche_label(niche, key) if niche in NICHES else "{niche}",
         "city": lead.get("city") or "{city}",
-        "detail": lead.get("signal") or "{detail}",
+        "detail": (lead.get("detail_i18n") or {}).get(key) or lead.get("signal") or "{detail}",
         "question": "{question}",
         "service": "{service}",
         "sender": SIGNOFF,
@@ -681,8 +685,17 @@ def outreach_set(lead: dict[str, Any], lang: str = "ES", extra: dict[str, Any] |
 
 
 def outreach_bundle(lead: dict[str, Any], extra: dict[str, Any] | None = None) -> dict[str, list[dict[str, Any]]]:
-    """All three steps in all three languages — what goes in the review PR."""
-    return {code: outreach_set(lead, code, extra) for code in LANGUAGES}
+    """All three steps in all three languages — what goes in the review PR.
+
+    `extra` is either one flat dict applied to every language, or a dict keyed
+    by language code ({"EN": {...}, "ES": {...}, "FR": {...}}) when the detail
+    and the question differ per language — which in a Spanish city they do.
+    """
+    per_lang = isinstance(extra, dict) and set(LANGUAGES).issubset(extra)
+    return {
+        code: outreach_set(lead, code, extra.get(code) if per_lang else extra)
+        for code in LANGUAGES
+    }
 
 
 # ---------------------------------------------------------------- cadence
@@ -1354,9 +1367,10 @@ def review_bundle(lead: dict[str, Any], extra: dict[str, Any] | None = None) -> 
            f"- Lead: `{lead.get('id')}` · channel: {lead.get('channel')}",
            f"- Signal spotted: {lead.get('signal')}",
            f"- Qualification: {qualify(lead)['score']}/5 matched ({qualify(lead)['verdict']})", ""]
+    per_lang = isinstance(extra, dict) and set(LANGUAGES).issubset(extra)
     for code in LANGUAGES:
         out.append(f"### {code}")
-        for draft in outreach_set(lead, code, extra):
+        for draft in outreach_set(lead, code, extra.get(code) if per_lang else extra):
             flag = "ready" if draft["ready_for_review"] else f"UNFILLED: {', '.join(draft['unfilled'])}"
             out += [f"**{draft['step']}** — {flag}", "", "```", draft["body"], "```", ""]
     out.append("> Human approval required before any of this is sent. MIM does not send.")
