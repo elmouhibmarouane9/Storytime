@@ -1,0 +1,166 @@
+{
+  "version": "8",
+  "dialect": "postgres",
+  "id": "aa6c1f59-23ad-4765-b818-642a60a422b6",
+  "prevIds": [
+    "00000000-0000-0000-0000-000000000000"
+  ],
+  "ddl": [
+    {
+      "isRlsEnabled": false,
+      "name": "mim_books",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "mim_records",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "owner_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "mim_books"
+    },
+    {
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "settings",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "mim_books"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "0",
+      "generated": null,
+      "identity": null,
+      "name": "revision",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "mim_books"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "updated_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "mim_books"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "owner_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "mim_records"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "collection",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "mim_records"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "record_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "mim_records"
+    },
+    {
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "data",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "mim_records"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "owner_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "mim_books",
+      "columnsTo": [
+        "owner_id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "mim_records_owner_id_mim_books_owner_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "mim_records"
+    },
+    {
+      "columns": [
+        "owner_id",
+        "collection",
+        "record_id"
+      ],
+      "nameExplicit": false,
+      "name": "mim_records_pkey",
+      "entityType": "pks",
+      "schema": "public",
+      "table": "mim_records"
+    },
+    {
+      "columns": [
+        "owner_id"
+      ],
+      "nameExplicit": false,
+      "name": "mim_books_pkey",
+      "schema": "public",
+      "table": "mim_books",
+      "entityType": "pks"
+    }
+  ],
+  "renames": []
+}
