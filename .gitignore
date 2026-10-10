@@ -1,6 +1,7 @@
 __pycache__
 *.pyc
 .pytest_cache
+.venv
 
 # Secrets and real client data stay off Git.
 .env

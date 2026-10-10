@@ -2,7 +2,8 @@
 
 MIM is the 24/7 COO, CFO and account manager for a one-person agency. It runs the whole
 operation from a single screen: **CRM · Invoicing & Finance · Project Tracking · Client
-Communications** — and it ends every page the way it ends every conversation:
+Communications · Leads-to-Sales Playbook** — and it ends every page the way it ends every
+conversation:
 
 > **▶ NEXT MOVE** — the two highest-value actions, ranked by money at stake × urgency.
 
@@ -64,7 +65,7 @@ dashboard is live immediately. Wipe it from **Settings → Book → Start a clea
 
 ---
 
-## The four pillars
+## The five pillars
 
 | Pillar | What it does | Where |
 |---|---|---|
@@ -72,6 +73,7 @@ dashboard is live immediately. Wipe it from **Settings → Book → Start a clea
 | **Invoicing & Finance** | Build invoices with dynamic line items, record payments, ledger with effective status, aging (Current → 90+), collection queue ranked by balance × lateness, tiered reminders, cash-flow forecast, multi-currency with FX to base | `mim/finance.py` · Invoices · Finance |
 | **Projects** | Weighted progress, deadline risk vs schedule baseline, deliverables + approval states, time logging, scope-creep detection × 4 flavours, change orders, uninvoiced-time → invoice | `mim/projects.py` · Projects |
 | **Comms** | 15 brand-voice templates in EN/ES, tiered payment reminders, approval chases, upsell and change-order drafts, thread summariser that pulls decisions/questions/dates/money, silence radar that flags communication gaps by cadence | `mim/comms.py` · Comms |
+| **Playbook** | The 5-step Leads-to-Sales playbook: 20 niches, lead qualification and tracker, EN/ES/FR outreach on a 0/3/7-day cadence, five sample works, the 14-day organic campaign, launch pricing, and a 5-point approval gate that blocks any run | `mim/playbook.py` · `docs/playbook.md` |
 
 ## The engine
 
@@ -103,6 +105,32 @@ checking in", no hedging. Each one ends in a decision or a next step.
 
 Drafts are **never sent** by MIM. They arrive editable with `.md` / `.txt` / `.html` / `.json`
 downloads; you send from your own inbox and hit "Log as sent".
+
+## The playbook, and its gate
+
+`mim/playbook.py` runs the 5-step Leads-to-Sales playbook — source leads, work the
+outreach cadence, build the portfolio, run the organic campaign, close on launch pricing.
+
+It is written under two rules that the tests enforce rather than the docs promise:
+
+* **No send path exists.** There is no send, publish, post, schedule or dispatch function in
+  the module, and a test fails if one is added. Every draft carries `requires_approval: True`.
+* **No campaign runs unapproved.** Five points — niche and city, outreach drafts, pricing,
+  duration, sample files — all signed off, or `assert_ready()` raises `ApprovalRequired`
+  naming what is still open. Approval happens in a pull request: `checklist_markdown()`
+  renders the five points as a PR body, `review_bundle()` renders one lead's whole
+  EN/ES/FR sequence.
+
+Outreach is a three-step cadence — day 0 names a specific detail and asks a question with no
+pitch attached, day 3 offers one free sample post, day 7 closes the thread — written in EN,
+ES and FR. A draft with an unfilled slot reports itself as not ready, so a generic message
+cannot leave by accident.
+
+```bash
+python -m mim.playbook ES   # checklist + tracker + what is due; exits 1 while unapproved
+```
+
+Full detail in **[`docs/playbook.md`](docs/playbook.md)**.
 
 ## Data model
 
