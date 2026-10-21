@@ -72,7 +72,7 @@ dashboard is live immediately. Wipe it from **Settings → Book → Start a clea
 | **CRM** | Pipeline board (Lead → Contacted → Proposal Sent → Active → Completed → Upsell), full client files (deal value, comms style, payment behaviour, preferences), 0-100 health scoring with reasons, stage history | `mim/crm.py` · Clients |
 | **Invoicing & Finance** | Build invoices with dynamic line items, record payments, ledger with effective status, aging (Current → 90+), collection queue ranked by balance × lateness, tiered reminders, cash-flow forecast, multi-currency with FX to base | `mim/finance.py` · Invoices · Finance |
 | **Projects** | Weighted progress, deadline risk vs schedule baseline, deliverables + approval states, time logging, scope-creep detection × 4 flavours, change orders, uninvoiced-time → invoice | `mim/projects.py` · Projects |
-| **Comms** | 15 brand-voice templates in EN/ES, tiered payment reminders, approval chases, upsell and change-order drafts, thread summariser that pulls decisions/questions/dates/money, silence radar that flags communication gaps by cadence | `mim/comms.py` · Comms |
+| **Comms** | 15 brand-voice templates in EN/ES, tiered payment reminders, approval chases, upsell and change-order drafts, optional local Hugging Face draft polishing, thread summariser that pulls decisions/questions/dates/money, silence radar that flags communication gaps by cadence | `mim/comms.py` · Comms |
 | **Playbook** | The 5-step Leads-to-Sales playbook: 20 niches, lead qualification and tracker, EN/ES/FR outreach on a 0/3/7-day cadence, five sample works, the 14-day organic campaign, launch pricing, and a 5-point approval gate that blocks any run | `mim/playbook.py` · `docs/playbook.md` |
 
 ## The engine
@@ -105,6 +105,11 @@ checking in", no hedging. Each one ends in a decision or a next step.
 
 Drafts are **never sent** by MIM. They arrive editable with `.md` / `.txt` / `.html` / `.json`
 downloads; you send from your own inbox and hit "Log as sent".
+
+Optional local AI polishing is available in the Comms compose tab. Install it with
+`pip install -r requirements-ai.txt`; the selected public Hugging Face model downloads on first
+use and runs on this device. Draft text is not sent to an inference API and no Hugging Face token
+is required. Set `MIM_LOCAL_MODEL` to use a different public model ID.
 
 ## The playbook, and its gate
 
@@ -334,7 +339,7 @@ Move a book between hosts with Settings → Book → Export / Restore. Same JSON
 
 ```bash
 pip install -r requirements-dev.txt
-python -m pytest tests/ -q     # 64 tests
+python -m pytest tests/ -q     # 162 tests
 ```
 
 - `tests/test_engine.py` — invoice maths, aging buckets, effective status, FX conversion, weighted
