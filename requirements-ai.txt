@@ -1,0 +1,4 @@
+# Optional local-only AI draft polishing. The model downloads on first use.
+torch>=2.3
+transformers>=4.45
+safetensors>=0.4

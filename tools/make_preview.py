@@ -27,19 +27,13 @@ OUT = ROOT / "docs" / "preview" / "index.html"
 LIVE = "https://8501-i02vfpkg7v59vnvvb6pa2.e2b.app"
 BASE_REF = "1d48e82"   # the commit this branch started from (the blank template)
 
-TODAY: date = store.today()
-BOOK = console.book()
-PULSE = console.pulse(BOOK, TODAY)
-MOVES = console.next_moves(BOOK, TODAY, limit=6)
-BASE = console.base_book(BOOK)
-CUR = PULSE["base_currency"]
-
 FILE_NOTES = {
     "streamlit_app.py": "Router: gate, sidebar with live snapshot, page dispatch, next-move footer",
     "app.py": "Entry shim so both `streamlit run app.py` and `streamlit_app.py` work",
-    "README.md": "The four pillars, the engine, permanent-link paths, test map",
+    "README.md": "The pillars, local AI drafts, engine, deploy paths and test map",
     "requirements.txt": "streamlit + pandas",
     "requirements-dev.txt": "pytest for the engine and headless page tests",
+    "requirements-ai.txt": "Optional Transformers + PyTorch runtime for local draft polishing",
     ".streamlit/config.toml": "0.0.0.0 bind, proxy-safe CORS/XSRF, dark theme, websocket tuning",
     ".gitignore": "Keeps .env, secrets and the client book out of Git",
     "mim/console.py": "Pulse snapshot + next_moves(): every signal ranked by money × urgency",
@@ -47,6 +41,7 @@ FILE_NOTES = {
     "mim/crm.py": "Pipeline probabilities, 0-100 health with reasons, cadence gaps, upsell triggers",
     "mim/projects.py": "Weighted progress, schedule risk, 4 scope-creep flags, time → invoice",
     "mim/comms.py": "15 brand-voice templates EN/ES, reminder ladder, thread summariser",
+    "mim/local_ai.py": "Optional local-only Hugging Face draft polishing",
     "mim/render.py": "Invoice → Markdown and print-ready HTML",
     "mim/service.py": "Every write path in one place; access gate; storage health",
     "mim/store.py": "Atomic local JSON + optional private-Git data repo with retry",
@@ -62,6 +57,7 @@ FILE_NOTES = {
     "mim/views/comms_view.py": "Compose, thread summariser, silence radar, history",
     "mim/views/settings_view.py": "Agency, targets, cadence, FX, invoice defaults, book & sync",
     "tests/test_engine.py": "Pillar maths: totals, aging, FX, forecast, health, scope, templates",
+    "tests/test_local_ai.py": "Local draft polishing behavior and optional dependency errors",
     "tests/test_app.py": "Headless render of all 7 pages + the access gate, via Streamlit AppTest",
     "tests/test_store_github.py": "Git data-repo backend against a fake GitHub API, offline",
     "tests/conftest.py": "Throwaway data directory per test run",
@@ -455,6 +451,8 @@ Lucía: ¿Podemos comprimir el calendario a dos semanas?"""
     return (kpis + '<h3>Silence radar</h3>' + gap_table +
             '<h3>Drafted re-open — Casa Ferrer, in Spanish because that is her language on file</h3>'
             + draft_block(es_subject, es_body) +
+            '<h3>Optional local AI polish</h3><p class="cap">An optional Hugging Face model refines drafts on this device. '
+            'Model files download on first use; draft text is never sent to an inference API.</p>' +
             '<h3>Thread summariser</h3>' + thread_html)
 
 
@@ -484,7 +482,19 @@ def settings_body() -> str:
 
 # ---------------------------------------------------------------- assembly
 
+def initialize() -> None:
+    global TODAY, BOOK, PULSE, MOVES, BASE, CUR
+    store.bootstrap()
+    TODAY = store.today()
+    BOOK = console.book()
+    PULSE = console.pulse(BOOK, TODAY)
+    MOVES = console.next_moves(BOOK, TODAY, limit=6)
+    BASE = console.base_book(BOOK)
+    CUR = PULSE["base_currency"]
+
+
 def build() -> str:
+    initialize()
     rows, totals = git_changes()
     tests = tests_summary()
     changes_table = table(
@@ -725,7 +735,6 @@ def footer_html() -> str:
 
 
 if __name__ == "__main__":
-    store.bootstrap()
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(build(), encoding="utf-8")
     print(f"wrote {OUT.relative_to(ROOT)} ({OUT.stat().st_size / 1024:.0f} KB)")

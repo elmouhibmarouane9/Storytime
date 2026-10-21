@@ -7,7 +7,7 @@ from typing import Any
 
 import streamlit as st
 
-from .. import comms, console, crm, projects, service
+from .. import comms, console, crm, local_ai, projects, service
 from ..models import money
 from ..ui import draft_surface, kpi_row, pick, pill, rule, table, toast
 
@@ -157,11 +157,22 @@ def _compose(b: dict, today: date) -> None:
                 extra["status_line"] = ""
 
     subject, body = comms.render(kind, client, extra, lang)
-    draft_surface(subject, body, key=f"compose_{client_id}_{kind}_{lang}", filename=f"{client_id}_{kind}", language=lang)
+    draft_key = f"compose_{client_id}_{kind}_{lang}"
+    body_key = f"{draft_key}_body"
+    if st.button("Polish with local AI", key=f"{draft_key}_local_ai"):
+        current_body = st.session_state.get(body_key, body)
+        try:
+            st.session_state[body_key] = local_ai.rewrite_body(current_body, lang)
+            st.success("Draft polished locally. Review it before sending.")
+        except local_ai.LocalModelError as exc:
+            st.error(str(exc))
+    st.caption("Optional local model. First use downloads model files from Hugging Face; draft text stays on this device.")
+    draft_surface(subject, body, key=draft_key, filename=f"{client_id}_{kind}", language=lang)
     c1, c2 = st.columns(2)
     if c1.button("Log as sent", width="stretch", key=f"compose_log_{client_id}_{kind}"):
+        sent_body = st.session_state.get(body_key, body)
         service.log_communication(client_id, {"date": today.isoformat(), "channel": "email", "direction": "out",
-                                              "subject": subject, "summary": body.split("\n")[0][:200]})
+                                              "subject": subject, "summary": sent_body.split("\n")[0][:200]})
         toast("Logged as sent")
         st.rerun()
     if kind.startswith("proposal") and c2.button("Move client to Proposal Sent", width="stretch", key="compose_stage"):
