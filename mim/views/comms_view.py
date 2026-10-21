@@ -166,7 +166,10 @@ def _compose(b: dict, today: date) -> None:
             st.success("Draft polished locally. Review it before sending.")
         except local_ai.LocalModelError as exc:
             st.error(str(exc))
-    st.caption("Optional local model. First use downloads model files from Hugging Face; draft text stays on this device.")
+    st.caption(
+        "SmolLM2-135M is the compact local default. First use downloads model files; "
+        "CPU inference may take minutes. Check for invented details; draft text stays on this device."
+    )
     draft_surface(subject, body, key=draft_key, filename=f"{client_id}_{kind}", language=lang)
     c1, c2 = st.columns(2)
     if c1.button("Log as sent", width="stretch", key=f"compose_log_{client_id}_{kind}"):

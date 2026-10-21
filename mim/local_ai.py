@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 from typing import Any
 
-DEFAULT_MODEL = "Qwen/Qwen2.5-0.5B-Instruct"
+DEFAULT_MODEL = "HuggingFaceTB/SmolLM2-135M-Instruct"
 INSTALL_HINT = "Install local AI support with `pip install -r requirements-ai.txt`."
 
 _MODELS: dict[str, tuple[Any, Any, Any]] = {}
@@ -64,7 +64,7 @@ def rewrite_body(body: str, language: str, model_id: str | None = None) -> str:
         with torch.inference_mode():
             output = model.generate(
                 **inputs,
-                max_new_tokens=512,
+                max_new_tokens=256,
                 do_sample=False,
                 pad_token_id=tokenizer.eos_token_id,
             )

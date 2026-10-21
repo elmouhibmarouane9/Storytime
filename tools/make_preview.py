@@ -451,8 +451,9 @@ Lucía: ¿Podemos comprimir el calendario a dos semanas?"""
     return (kpis + '<h3>Silence radar</h3>' + gap_table +
             '<h3>Drafted re-open — Casa Ferrer, in Spanish because that is her language on file</h3>'
             + draft_block(es_subject, es_body) +
-            '<h3>Optional local AI polish</h3><p class="cap">An optional Hugging Face model refines drafts on this device. '
-            'Model files download on first use; draft text is never sent to an inference API.</p>' +
+            '<h3>Optional local AI polish</h3><p class="cap">SmolLM2-135M-Instruct is the compact default. '
+            'Model files download on first use; draft text is never sent to an inference API. CPU-only inference may take minutes, '
+            'and small models can add unsupported details — review every draft.</p>' +
             '<h3>Thread summariser</h3>' + thread_html)
 
 
