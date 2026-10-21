@@ -107,9 +107,10 @@ Drafts are **never sent** by MIM. They arrive editable with `.md` / `.txt` / `.h
 downloads; you send from your own inbox and hit "Log as sent".
 
 Optional local AI polishing is available in the Comms compose tab. Install it with
-`pip install -r requirements-ai.txt`; the selected public Hugging Face model downloads on first
-use and runs on this device. Draft text is not sent to an inference API and no Hugging Face token
-is required. Set `MIM_LOCAL_MODEL` to use a different public model ID.
+`pip install -r requirements-ai.txt`; the compact `HuggingFaceTB/SmolLM2-135M-Instruct` model
+downloads on first use and runs on this device, suited to CPU-only or memory-limited machines.
+Draft text is not sent to an inference API and no Hugging Face token is required. Set
+`MIM_LOCAL_MODEL` to use a different public model ID.
 
 ## The playbook, and its gate
 
@@ -339,7 +340,7 @@ Move a book between hosts with Settings → Book → Export / Restore. Same JSON
 
 ```bash
 pip install -r requirements-dev.txt
-python -m pytest tests/ -q     # 162 tests
+python -m pytest tests/ -q     # 163 tests
 ```
 
 - `tests/test_engine.py` — invoice maths, aging buckets, effective status, FX conversion, weighted

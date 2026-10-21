@@ -6,6 +6,10 @@ import pytest
 from mim import local_ai
 
 
+def test_default_model_is_compact_for_cpu_only_devices():
+    assert local_ai.DEFAULT_MODEL == "HuggingFaceTB/SmolLM2-135M-Instruct"
+
+
 def test_rewrite_uses_model_locally_and_preserves_language(monkeypatch):
     calls = {}
 
@@ -53,6 +57,7 @@ def test_rewrite_uses_model_locally_and_preserves_language(monkeypatch):
             return iter([SimpleNamespace(device="cpu")])
 
         def generate(self, **inputs):
+            calls["max_new_tokens"] = inputs["max_new_tokens"]
             return [FakeTensor([1, 2, 3])]
 
     def load_model(model_id, token, use_safetensors):
@@ -72,7 +77,8 @@ def test_rewrite_uses_model_locally_and_preserves_language(monkeypatch):
     monkeypatch.setitem(sys.modules, "transformers", fake_transformers)
     local_ai._MODELS.clear()
 
-    result = local_ai.rewrite_body("Texto original", "ES", "public/model")
+    monkeypatch.setenv("MIM_LOCAL_MODEL", "public/model")
+    result = local_ai.rewrite_body("Texto original", "ES")
 
     assert result == "Una versión más directa."
     assert calls["model_id"] == "public/model"
@@ -82,6 +88,7 @@ def test_rewrite_uses_model_locally_and_preserves_language(monkeypatch):
     assert calls["messages"][0]["content"].endswith("Spanish. Keep the meaning, names, figures, dates, promises, and next step unchanged. Use a confident, cinematic, direct voice. Do not invent facts. Return only the revised message body.")
     assert calls["messages"][1]["content"] == "Texto original"
     assert calls["device"] == "cpu"
+    assert calls["max_new_tokens"] == 256
     local_ai._MODELS.clear()
 
 
