@@ -1,6 +1,7 @@
 import { acceptInvite, getSettings, getUser, handleAuthCallback, login, logout, onAuthChange, requestPasswordRecovery, signup, updateUser } from "@netlify/identity";
 import { baseAmount, bookSchema, collections, currencies, daysBetween, emptyBook, invoiceTotals, money, nextMoves, projectProgress, projectRisk, stages, taskStatuses, today, type Book, type Collection, type RecordData } from "./domain.js";
 import { sampleBook, templates } from "./sample.js";
+import { injectSpeedInsights } from "@vercel/speed-insights";
 
 const root = document.querySelector<HTMLDivElement>("#app")!;
 const pages: Record<string, [string, string]> = {
@@ -440,3 +441,6 @@ onAuthChange((event) => {
   }
 });
 void start();
+
+// Initialize Vercel Speed Insights
+injectSpeedInsights();
